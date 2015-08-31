@@ -1,0 +1,73 @@
+{% import "_includes/forms" as forms %}
+
+{% block content %}
+	<div class="commerceMailerSettings">
+		<h2>{{ name }}&nbsp;</h2>
+		<p><small>(Version {{ version }})</small></p>
+		<p>
+			Commerce Mailer helps you set up forms for emailing product enquiries &amp; customer cart/order details.
+			<br>For <a href="http://buildwithcraft.com" title="Craft CMS">Craft</a>, with <a href="http://buildwithmarket.com/" title="Craft Commerce">Commerce</a>.
+		</p>
+		<div>
+			<p>Debugging?</p>
+			{{
+				forms.lightswitch({
+					onLabel:	"On",
+					offLabel:	"Off",
+					name:		"debug",
+					on:			settings.debug,
+				})
+			}}
+			<p>Send Emails?</p>
+			{{
+				forms.lightswitch({
+					onLabel:	"On",
+					offLabel:	"Off",
+					name:		"emailing",
+					on:			settings.emailing,
+				})
+			}}
+			<p>Append sender details to subject?  Can be handy if you're sending this to a ticketing system...</p>
+			{{
+				forms.lightswitch({
+					onLabel:	"On",
+					offLabel:	"Off",
+					name:		"appendSenderToSubject",
+					on:			settings.appendSenderToSubject,
+				})
+			}}
+			{{
+				forms.textField({
+					id:				"defaultEmail",
+					name:			"defaultEmail",
+					label:			"Default Email"|t,
+					placeholder:	"blah@blah.com",
+					instructions:	"The default email address to send to, generally your contact email"|t,
+					value:			settings.defaultEmail,
+					errors:			"",
+				})
+			}}
+			{{
+				forms.textField({
+					id:				"defaultName",
+					name:			"defaultName",
+					label:			"Deafult Name"|t,
+					placeholder:	"Joe Blogs",
+					instructions:	"The default name to send to, generally your name/company name"|t,
+					value:			settings.defaultName,
+					errors:			"",
+				})
+			}}
+			{{
+				forms.textField({
+					id:				"templateFolder",
+					name:			"templateFolder",
+					label:			"Folder for your email templates"|t,
+					placeholder:	"",
+					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form.  So if you want to use '_emails/product-enquiry.html', put '_emails' here, and a hidden input name='template' value='product-enquiry'."|t,
+					value:			settings.templateFolder,
+					errors:			"",
+				})
+			}}
+		</div>
+{% endblock %}
