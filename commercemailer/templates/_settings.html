@@ -9,7 +9,8 @@
 			<br>For <a href="http://buildwithcraft.com" title="Craft CMS">Craft</a>, with <a href="http://buildwithmarket.com/" title="Craft Commerce">Commerce</a>.
 		</p>
 		<div>
-			<p>Debugging?</p>
+
+			<p>Debugging? (Dump POST to page, prevent re-directs)</p>
 			{{
 				forms.lightswitch({
 					onLabel:	"On",
@@ -18,7 +19,8 @@
 					on:			settings.debug,
 				})
 			}}
-			<p>Send Emails?</p>
+
+			<p>Send Emails? (Otherwise check the plugin logs to see what would have been sent)</p>
 			{{
 				forms.lightswitch({
 					onLabel:	"On",
@@ -27,6 +29,7 @@
 					on:			settings.emailing,
 				})
 			}}
+
 			<p>Append sender details to subject?  Can be handy if you're sending this to a ticketing system...</p>
 			{{
 				forms.lightswitch({
@@ -36,6 +39,7 @@
 					on:			settings.appendSenderToSubject,
 				})
 			}}
+
 			{{
 				forms.textField({
 					id:				"defaultEmail",
@@ -47,27 +51,41 @@
 					errors:			"",
 				})
 			}}
+
 			{{
 				forms.textField({
 					id:				"defaultName",
 					name:			"defaultName",
-					label:			"Deafult Name"|t,
+					label:			"Default Name"|t,
 					placeholder:	"Joe Blogs",
 					instructions:	"The default name to send to, generally your name/company name"|t,
 					value:			settings.defaultName,
 					errors:			"",
 				})
 			}}
+
 			{{
 				forms.textField({
 					id:				"templateFolder",
 					name:			"templateFolder",
 					label:			"Folder for your email templates"|t,
 					placeholder:	"",
-					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form.  So if you want to use '_emails/product-enquiry.html', put '_emails' here, and a hidden input name='template' value='product-enquiry'."|t,
+					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form."|t,
 					value:			settings.templateFolder,
 					errors:			"",
 				})
 			}}
+
+			{{ 
+				forms.textField({
+					label:        "Honeypot Field"|t,
+					id:           'honeypotField',
+					name:         'honeypotField',
+					instructions: "The name of the 'honeypot' field in your email forms.  Leave blank if none."|t,
+					value:        settings.honeypotField,
+					errors:       settings.getErrors('honeypotField')
+				}) 
+			}}
+
 		</div>
 {% endblock %}

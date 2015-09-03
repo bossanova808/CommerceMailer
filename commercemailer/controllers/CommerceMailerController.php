@@ -1,6 +1,7 @@
 <?php
 namespace Craft;
 
+
 class CommerceMailerController extends BaseController
 {
 
@@ -12,6 +13,22 @@ class CommerceMailerController extends BaseController
 
     private function logInfo($message){
         CommerceMailerPlugin::log($message, LogLevel::Info);
+    }
+
+    /**
+     * Checks that the 'honeypot' field has not been filled out (assuming one has been set).
+     *
+     * @param string $fieldName The honeypot field name.
+     * @return bool
+     */
+    protected function validateHoneypot($fieldName)
+    {
+        if (!$fieldName)
+        {
+            return true;
+        }
+        $honey = craft()->request->getPost($fieldName);
+        return $honey == '';
     }
 
     public function actionSendMail()
@@ -106,7 +123,18 @@ class CommerceMailerController extends BaseController
         else {
 
             if($emailing){
-                $sent = craft()->email->sendEmail($email);
+                $sent = false;
+                // only actually send it if the honeypot is empty...
+                $honey = $this->validateHoneypot($settings->honeypotField);
+                if ($honey){                    
+                    $sent = craft()->email->sendEmail($email);
+                }
+                else{
+                    $this->logInfo('CommerceMailer spam trapped an email to : ' . $vars['toEmail']);
+                    //we pretend we've sent it...
+                    $sent = true;
+                }
+
                 if (!$sent){
                     $errors[] = 'craft()->email->sendEmail failed.';
                     $this->logError('craft()->email->sendEmail failed.');
@@ -114,7 +142,9 @@ class CommerceMailerController extends BaseController
                 }
                 else{
                     craft()->userSession->setFlash('market', 'CommerceMailer has sent an email to : ' . $vars['toEmail']);
-                    $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
+                    if ($honey) {
+                        $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
+                    }
                 }
             }
             else {

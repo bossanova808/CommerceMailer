@@ -18,7 +18,7 @@ class CommerceMailerPlugin extends BasePlugin
 
     function getVersion()
     {
-        return '0.0.2';
+        return '0.0.1';
     }
 
     function getDeveloper()
@@ -37,6 +37,7 @@ class CommerceMailerPlugin extends BasePlugin
             'defaultEmail'                  => AttributeType::String,
             'defaultName'                   => AttributeType::String,
             'templateFolder'                => AttributeType::String,
+            'honeypotField'                 => AttributeType::String,
             'appendSenderToSubject'         => AttributeType::Bool,
             'debug'                         => AttributeType::Bool,
             'emailing'                      => AttributeType::Bool,
