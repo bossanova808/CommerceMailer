@@ -2,13 +2,13 @@
 
 Makes it easier to implement forms to sent Craft Commerce products, carts and orders by email, using full Craft templates for the email.
 
-Supports Ajax with JSON responses, and has simple spam trapping via the Honeypot technique (copies P & T Contact Form code for this).
+Supports Ajax with JSON responses, and has simple spam trapping via the Honeypot technique (copies [Pixel & Tonic's Contact Form][contactform] for this).
 
 ## Installation
 
 To install CommerceMailer, follow these steps:
 
-* Upload the contactform/ folder to your craft/plugins/ folder.
+* Upload the commercemailer/ folder to your craft/plugins/ folder.
 * Go to Settings > Plugins from your Craft control panel and enable the CommerceMailer plugin.
 * Click on “Mailer for Commerce” to go to the plugin’s settings page, and configure the plugin.
 
