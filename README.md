@@ -1,8 +1,14 @@
 # Commerce Mailer
 
-Makes it easier to implement forms to sent Craft Commerce products, carts and orders by email, using full Craft templates for the email.
+Makes it easier to implement forms to sent Craft Commerce products, carts and orders by email (usually to the store owner but optionally to others as well), using twig templates for the email.
 
-Supports Ajax with JSON responses, and has simple spam trapping via the Honeypot technique (copies [Pixel & Tonic's Contact Form][contactform] for this).
+Supports Ajax with JSON responses, and has simple spam trapping.  
+
+### Notes on the spam trapping
+
+* First, I suggest only using forms with a `toEmail` parameter behind a login as there is obviously a lot of potential for abuse there.  
+* For forms not behind a login, use the `internalName` paramter which is matched against the whitelist in settings (and you supply just the name part of the email, the internal domain comes from settings).
+* Also, spam trapping is done via the Honeypot technique (copies [Pixel & Tonic's Contact Form][contactform] for this) if you set a honeypot field name in settings.
 
 ## Installation
 
@@ -18,46 +24,70 @@ The following variables are used in the form.
 
 Name | Required | Notes
 ---- | -------- | -----
-`toEmail` | Yes | Pass `default` to use the email from the plugin settings
-`toName` | No | Pass `default` to use the name from the plugin settings
+`action` | Yes | Must be `commerceMailer/sendmail`
+`toName` | No | 
+`toEmail` | No | Should probably only be used on forms behind a login to avoid spam. (Either toEmail or internalName must be supplied).
+`internalName` | No | If supplied, will be added to the internal domain setting value, and the name must be found in the whitelist in the plugin settings
 `fromEmail` | Yes | 
 `fromName` | No | 
 `subject` | Yes | 
-`body`    | Yes |
+`message`    | Yes | The body of your message, or an array of custom fields + a body, see below.
 `productId` | No | ID of a product (not variant)
 `orderId` | No | ID of an order
-`action` | Yes | Must be `commerceMailer/sendmail`
 `template` | Yes | The name of your email template(appended to the email folder from settings)
 `redirect` | No | URL to redirect to after email has been sent (ignored when called by Ajax)
 
 Use the following form as an example - this is for a product enquiry to be sent to the default address from the plugin settings.
 
 ```
-<form id="commerceMailerForm" method="POST" >
-    {{ getCsrfInput() }}
-    <input type="hidden" name="action"              value="commerceMailer/sendmail">
-    <input type="hidden" name="template"            value="product-enquiry">
-    <input type="hidden" name="redirect"            value="/utility/email-sent">
-    <input type="hidden" name="productId"           value="{{ product.id }}">
-    <input type="hidden" name="subject"             value="Product Enquiry: {{ product.title }}" >
-    <input type="hidden" name="toEmail"             value="default" >
-    <input type="hidden" name="toName"              value="default" >
+    <form id="commerceMailerForm" method="POST" >
+        {{ getCsrfInput() }}
+        <input type="hidden" name="action"              value="commerceMailer/sendmail">
+        <input type="hidden" name="template"            value="contact-form">
+        <input type="hidden" name="redirect"            value="/utility/email-sent">
 
-    {# Honeypot field #}
-    <input id="schatje" name="schatje" type="text" style="display:none;">
+        {# honeypot field defined in settings and with css to set display:none #}
+        <input id="schatje" name="schatje" type="text">
+        
+        <p>Choose your enquiry type:</p>
+        <input type="radio" checked="" value="enquiries" name="internalName"> <strong>General / Stock</strong> (goes to Meg, our office manager)
+        <br>
+        <input type="radio" value="services" name="internalName"> <strong>Services</strong> (goes to Elisa, our services manager)
+        <br>
+        <input type="radio" value="techsupport" name="internalName"> <strong>Technical / Advice</strong> (goes to Jeremy Daalder, our Director)
+        <br>
+        <input type="radio" value="website" name="internalName"> <strong>Website Issue</strong> (goes to Katie, our marketing &amp; website manager)
+        <br>
+        <br>
+        <label class="combo is-required">
+            <input type="text" placeholder="Your Name" name="fromName" class="combo__input">
+            <span class="combo__label">Your Name</span>
+        </label>
+        <label class="combo is-required">
+            <input type="text" placeholder="Your Email (please check carefully!)" name="fromEmail" class="combo__input">
+            <br>
+            <span class="combo__label">Your Email (please check carefully that you enter this correctly!)</span>
+        </label>
+        <label class="combo">
+            <input type="text" placeholder="Your Phone Number" name="message[Phone Number]" class="combo__input">
+            <br>
+            <span class="combo__label">Your Phone Number (some answers are just too long for email!)</span>
+        </label>
+        <label class="combo is-required">
+            <input type="text" placeholder="Enquiry Subject" name="subject" class="combo__input">
+            <br>
+            <span class="combo__label">What is this enquiry about?</span>
+        </label>
+        <br>
+        <textarea placeholder="Enter your enquiry here." name="message[body]"></textarea>
+        <br>
+        <br>
+        <input class="btn btn--blue" id="commerceMailerSubmitButton" type="submit" value="Send to Image Science">
+    </form>
 
-    Your Name:
-    <input type="text" placeholder="Your Name" name="fromName">
-    Your Email:
-    <input type="text" placeholder="Your Email" name="fromEmail">
-	Your Message:
-	<textarea placeholder="Enter your question here." name="body"></textarea>
-	<input type="submit" id="commerceMailerSubmitButton" value="Send to Image Science" class="btn">
-
-</form>
 ```
 
-Alternatively, submit via Ajax & get JSON responses.  
+Alternatively, you can submit your form via Ajax & get JSON responses.  
 
 ```
 $("#commerceMailerForm").submit(function(e) {
@@ -78,6 +108,45 @@ $("#commerceMailerForm").submit(function(e) {
         
 });
 ```
+
+### Adding additional fields
+
+You can add additional fields to your form by splitting your “message” field into multiple fields, using an array syntax for the input names:
+
+```
+<h3><label for="message">Message</label></h3>
+<textarea rows="10" cols="40" id="message" name="message[body]">{% if message is defined %}{{ message.message }}{% endif %}</textarea>
+
+<h3><label for="phone">Your phone number</label></h3>
+<input id="phone" type="text" name="message[Phone]" value="">
+
+<h3>What services are you interested in?</h3>
+<label><input type="checkbox" name="message[Services][]" value="Design"> Design</label>
+<label><input type="checkbox" name="message[Services][]" value="Development"> Development</label>
+<label><input type="checkbox" name="message[Services][]" value="Strategy"> Strategy</label>
+<label><input type="checkbox" name="message[Services][]" value="Marketing"> Marketing</label>
+```
+
+If you have a primary “Message” field, you should name it ``message[body]``, like in that example.
+
+An email sent with the above form might result in the following message:
+
+    Phone: (555) 123-4567
+
+    Services: Design, Development
+
+    Hey guys, I really loved this simple contact form (I'm so tired of agencies
+    asking for everything but my social security number up front), so I trust
+    you guys know a thing or two about usability.
+
+    I run a small coffee shop and we want to start attracting more freelancer-
+    types to spend their days working from our shop (and sipping fine coffee!).
+    A clean new website with lots of social media integration would probably
+    help us out quite a bit there. Can you help us with that?
+
+    Hope to hear from you soon.
+
+    Cathy Chino
 
 ### The “Honeypot” field
 
