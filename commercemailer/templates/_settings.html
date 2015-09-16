@@ -42,24 +42,12 @@
 
 			{{
 				forms.textField({
-					id:				"defaultEmail",
-					name:			"defaultEmail",
-					label:			"Default Email"|t,
-					placeholder:	"blah@blah.com",
-					instructions:	"The default email address to send to, generally your contact email"|t,
-					value:			settings.defaultEmail,
-					errors:			"",
-				})
-			}}
-
-			{{
-				forms.textField({
-					id:				"defaultName",
-					name:			"defaultName",
-					label:			"Default Name"|t,
-					placeholder:	"Joe Blogs",
-					instructions:	"The default name to send to, generally your name/company name"|t,
-					value:			settings.defaultName,
+					id:				"internalDomain",
+					name:			"internalDomain",
+					label:			"Internal Domain"|t,
+					placeholder:	"blah.com",
+					instructions:	"The internal domain to be added to name supplied in toEmailInternal - so if toEmailInternal is blah, and this is blah.com, the final address would be blah@blah.com"|t,
+					value:			settings.internalDomain,
 					errors:			"",
 				})
 			}}
@@ -69,8 +57,8 @@
 					id:				"templateFolder",
 					name:			"templateFolder",
 					label:			"Folder for your email templates"|t,
-					placeholder:	"",
-					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form."|t,
+					placeholder:	"_emails",
+					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form. No slashes."|t,
 					value:			settings.templateFolder,
 					errors:			"",
 				})
@@ -86,6 +74,18 @@
 					errors:       settings.getErrors('honeypotField')
 				}) 
 			}}
+
+			{{ 
+				forms.textareaField({
+					label:        "Whitelisted Names"|t,
+					id:           'whitelistedNames',
+					name:         'whitelistedNames',
+					instructions: "Comma separated list of names allowed for the internalName input, will have the Internal Domain added to them, e.g. 'enquiries, website' here would allow email using 'internalName' only to enquiries@blah.com and website@blah.com"|t,
+					value:        settings.whitelistedNames,
+					errors:       settings.getErrors('whitelistedNames')
+				}) 
+			}}
+
 
 		</div>
 {% endblock %}
