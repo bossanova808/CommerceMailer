@@ -15,6 +15,7 @@ class CommerceMailerController extends BaseController
         CommerceMailerPlugin::log($message, LogLevel::Info);
     }
 
+
     /**
      * Checks that the 'honeypot' field has not been filled out (assuming one has been set).
      *
@@ -42,7 +43,9 @@ class CommerceMailerController extends BaseController
         //Settings to control behavour when testing - we don't want to debug via ajax or it stuffs up the JSON response...
         $debug = ($settings->debug and !$ajax);
         $emailing = $settings->emailing;
- 
+
+        $savedBody = false;
+
         //Must be called by POST
         $this->requirePostRequest();
         //We'll return all the POST data to the template, so kick of our return data with that...
@@ -55,29 +58,99 @@ class CommerceMailerController extends BaseController
             echo '</pre>';
         }
 
+        //Is this spam? Assume false.  
+        $spam = false;
+        $spam = !$this->validateHoneypot($settings->honeypotField);
+
+        //If it's an internal email, make sure it's in the whitelist of names
+        $emailWhitelist = array_map('trim', explode(',', $settings->whitelistedNames));
+        if ($debug){
+            echo '<h3>Whitelist</h3><pre>';
+            print_r($emailWhitelist);
+            echo '</pre>';
+        }
+        if (isset($vars['internalName'])){
+            if($vars['internalName']!=""){
+                $spam = $spam && in_array($vars['internalName'], $emailWhitelist);
+                if (!$spam){
+                    $vars['toEmail'] = $vars['internalName'] . "@" . $settings->internalDomain;
+                }
+            }
+        }           
+
+
         //hold a list of possible errors to pass back to template on error
         $errors = array();
 
-        // Swap in values from settings if 'default' supplied
-        if (isset($vars['toEmail'])){
-            if ($vars['toEmail']==="default"){
-                $vars['toEmail'] = $settings->defaultEmail;               
+        //Deal with extra fields...the message input might be just a message, or have other fields
+        //Pinched from P & T ContactForm
+        $postedMessage = craft()->request->getPost('message');
+        
+        if ($postedMessage)
+        {
+            if (is_array($postedMessage))
+            {
+                $savedBody = false;
+                if (isset($postedMessage['body']))
+                {
+                    // Save the message body in case we need to reassign it in the event there's a validation error
+                    $savedBody = $postedMessage['body'];
+                }
+                // If it's false, then there was no messages[body] input submitted.  If it's '', then validation needs to fail.
+                if ($savedBody === false || $savedBody !== '')
+                {
+                    // Compile the message from each of the individual values
+                    $compiledMessage = '';
+                    foreach ($postedMessage as $key => $value)
+                    {
+                        if ($key != 'body')
+                        {
+                            if ($compiledMessage)
+                            {
+                                $compiledMessage .= "<br><br>";
+                            }
+                            $compiledMessage .= $key.': ';
+                            if (is_array($value))
+                            {
+                                $compiledMessage .= implode(', ', $value);
+                            }
+                            else
+                            {
+                                $compiledMessage .= $value;
+                            }
+                        }
+                    }
+                    if (!empty($postedMessage['body']))
+                    {
+                        if ($compiledMessage)
+                        {
+                            $compiledMessage .= "<br><br>";
+                        }
+                        $compiledMessage .= $postedMessage['body'];
+                    }
+                    $vars['body'] = $compiledMessage;
+                }
             }
-        }
-        if (isset($vars['toName'])){
-            if ($vars['toName']==="default"){
-                $vars['toName'] = $settings->defaultName;
+            else
+            {
+                $vars['body'] = $postedMessage;
             }
         }
  
-        // create an EmailModel, populate it, we'll vaidate it later
+        // create an EmailModel & populate it
         $email = EmailModel::populateModel($vars);
 
+
         //validate the email model 
-        //put all our errors in one place, and return the email model if invalid
+        //put all our errors in one place, and return the email model if invalid - use message as this is what contactForm does
         $valid = $email->validate();
         if (!$valid){
-            $vars['email'] = $email;
+
+            if ($savedBody !== false)
+            {
+                $vars['message'] = $savedBody;
+            }
+
             foreach ($email->getAllErrors() as $key => $error){
                 $errors[] = $error;
             }
@@ -103,10 +176,12 @@ class CommerceMailerController extends BaseController
             $errors[] = 'No template in POST';
         } 
 
+        //@TODO - what to do about the plain text body - will be unrendered...
         if (isset($templateFolder) and isset($vars['template']) and !$errors){
             // parse the html template
             $htmlBody = craft()->templates->render($templateFolder . "/" . $vars['template'], $vars);
             if ($debug) {
+                print("<h4>Subject: " . $vars['subject'] ."</h4>");
                 print($htmlBody);
             }
             $email->htmlBody = $htmlBody;      
@@ -118,37 +193,41 @@ class CommerceMailerController extends BaseController
             foreach ($errors as $error) {
                 $this->logError($error);
             }
-            craft()->urlManager->setRouteVariables(['errors' => $errors, 'email' => $email] );
+            craft()->urlManager->setRouteVariables(['errors' => $errors, 'message' => $email] );
         } 
         else {
 
             if($emailing){
                 $sent = false;
-                // only actually send it if the honeypot is empty...
-                $honey = $this->validateHoneypot($settings->honeypotField);
-                if ($honey){                    
+                //attempt to send the email
+                if (!$spam){                    
                     $sent = craft()->email->sendEmail($email);
                 }
+                //spam - honey pot failed or email was not on the whitelist
                 else{
                     $this->logInfo('CommerceMailer spam trapped an email to : ' . $vars['toEmail']);
-                    //we pretend we've sent it...
+                    // but we pretend we've sent it...
                     $sent = true;
                 }
-
+                //we tried to send an email, log the result..
                 if (!$sent){
                     $errors[] = 'craft()->email->sendEmail failed.';
                     $this->logError('craft()->email->sendEmail failed.');
-                    craft()->urlManager->setRouteVariables(['errors' => $errors, 'email' => $email] );                            
+                    craft()->urlManager->setRouteVariables(['errors' => $errors, 'message' => $email] );                            
                 }
+                //success!
                 else{
                     craft()->userSession->setFlash('market', 'CommerceMailer has sent an email to : ' . $vars['toEmail']);
-                    if ($honey) {
-                        $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
-                    }
+                    $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
                 }
             }
-            else {
-                $this->logInfo('CommerceMailer would have has sent an email to : ' . $vars['toEmail']);
+            else{
+                if(!$spam){
+                    $this->logInfo('CommerceMailer would have has sent an email to : ' . $vars['toEmail']);
+                }
+                else {
+                    $this->logInfo('CommerceMailer would have spam trapped an email to : ' . $vars['toEmail']);
+                }
             }
 
             //only redirect on non ajax calls and if debugging isn't enabled.
@@ -161,6 +240,9 @@ class CommerceMailerController extends BaseController
         if ($debug and $errors){
             echo '<h3>ERRORS</h3><pre>';
             print_r($errors);
+            echo '</pre>';
+            echo '<h3>MESSAGE</h3><pre>';
+            print_r($vars['message']);
             echo '</pre>';
         }
 
