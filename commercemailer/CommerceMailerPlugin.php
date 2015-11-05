@@ -18,7 +18,7 @@ class CommerceMailerPlugin extends BasePlugin
 
     function getVersion()
     {
-        return '0.0.3';
+        return '0.0.4';
     }
 
     function getDeveloper()
@@ -28,7 +28,23 @@ class CommerceMailerPlugin extends BasePlugin
 
     function getDeveloperUrl()
     {
-        return '';
+        return 'https://github.com/bossanova808';
+    }
+
+    function getDocumentationUrl(){
+        return 'https://github.com/bossanova808/CommerceMailer';
+    }
+
+    function getDescription(){
+        return 'Commerce Mailer helps you set up forms for emailing product enquiries and customer cart/order details.';
+    }
+
+    function getReleaseFeedUrl(){
+        return 'https://raw.githubusercontent.com/bossanova808/craft-plugin-updates/master/updates-commercemailer.json';
+    }
+
+    function hasSettings(){
+        return true;
     }
 
     public function defineSettings()
@@ -53,6 +69,7 @@ class CommerceMailerPlugin extends BasePlugin
             'name'     => $this->getName(true),
             'version'  => $this->getVersion(),
             'settings' => $settings,
+            'description' => $this->getDescription(),
         );
 
         return craft()->templates->render('commercemailer/_settings', $variables);
