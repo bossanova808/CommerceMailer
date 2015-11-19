@@ -158,12 +158,12 @@ class CommerceMailerController extends BaseController
 
         // Product, order and cart data 
         if (isset($vars['productId'])) {
-            $vars['product'] = craft()->market_product->getById($vars['productId']);
+            $vars['product'] = craft()->commerce_product->getById($vars['productId']);
         } 
         if (isset($vars['orderId'])) {
-            $vars['order'] = craft()->market_order->getById($vars['orderId']);
+            $vars['order'] = craft()->commerce_order->getById($vars['orderId']);
         } 
-        $vars['cart'] = craft()->market_cart->getCart();
+        $vars['cart'] = craft()->commerce_cart->getCart();
 
 
         //Actual template to load is built by using the settings templateFolder + the form's POST var with name 'template'
@@ -217,7 +217,7 @@ class CommerceMailerController extends BaseController
                 }
                 //success!
                 else{
-                    craft()->userSession->setFlash('market', 'CommerceMailer has sent an email to : ' . $vars['toEmail']);
+                    craft()->userSession->setFlash('notice', 'CommerceMailer has sent an email to : ' . $vars['toEmail']);
                     $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
                 }
             }
