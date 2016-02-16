@@ -192,3 +192,7 @@ If there is an active cart, it will always be available in `cart`.
 ## Thanks
 
 Thanks go out to [@lukeholder](https://github.com/lukeholder) and [@crawf](https://github.com/engram-design)
+
+## Icon
+
+From the [Noun Project](https://thenounproject.com/) by Nicolas Vicent
