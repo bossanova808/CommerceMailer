@@ -51,37 +51,17 @@ Use the following form as an example - this is for a product enquiry to be sent 
         <input id="schatje" name="schatje" type="text">
         
         <p>Choose your enquiry type:</p>
-        <input type="radio" checked="" value="enquiries" name="internalName"> <strong>General / Stock</strong> (goes to Meg, our office manager)
-        <br>
-        <input type="radio" value="services" name="internalName"> <strong>Services</strong> (goes to Elisa, our services manager)
-        <br>
-        <input type="radio" value="techsupport" name="internalName"> <strong>Technical / Advice</strong> (goes to Jeremy Daalder, our Director)
-        <br>
-        <input type="radio" value="website" name="internalName"> <strong>Website Issue</strong> (goes to Katie, our marketing &amp; website manager)
-        <br>
-        <br>
-        <label class="combo is-required">
-            <input type="text" placeholder="Your Name" name="fromName" class="combo__input">
-            <span class="combo__label">Your Name</span>
-        </label>
-        <label class="combo is-required">
-            <input type="text" placeholder="Your Email (please check carefully!)" name="fromEmail" class="combo__input">
-            <br>
-            <span class="combo__label">Your Email (please check carefully that you enter this correctly!)</span>
-        </label>
-        <label class="combo">
-            <input type="text" placeholder="Your Phone Number" name="message[Phone Number]" class="combo__input">
-            <br>
-            <span class="combo__label">Your Phone Number (some answers are just too long for email!)</span>
-        </label>
-        <label class="combo is-required">
-            <input type="text" placeholder="Enquiry Subject" name="subject" class="combo__input">
-            <br>
-            <span class="combo__label">What is this enquiry about?</span>
-        </label>
+        <input type="radio" checked="" value="enquiries" name="internalName"> <strong>General / Stock</strong>
+        <input type="radio" value="services" name="internalName"> <strong>Services</strong>
+        <input type="radio" value="techsupport" name="internalName"> <strong>Technical / Advice</strong>
+        <input type="radio" value="website" name="internalName"> <strong>Website Issue</strong>
+            
+        <input type="text" placeholder="Your Name" name="fromName">
+        <input type="text" placeholder="Your Email (please check carefully!)"> 
+        <input type="text" placeholder="Your Phone Number" name="message[Phone Number]">
+        <input type="text" placeholder="Enquiry Subject" name="subject">
         <br>
         <textarea placeholder="Enter your enquiry here." name="message[body]"></textarea>
-        <br>
         <br>
         <input class="btn btn--blue" id="commerceMailerSubmitButton" type="submit" value="Send to Image Science">
     </form>
