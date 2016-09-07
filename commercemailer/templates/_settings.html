@@ -9,17 +9,31 @@
         <hr>
 		<div>
 
-			<p>Debugging? (Dump POST to page, prevent re-directs)</p>
+            <h4>{{ 'Debugging?' | t }}</h4>
+
+            {{ forms.lightswitch({
+                onLabel: "On",
+                offLabel: "Off",
+                name: "debug",
+                on: settings.debug,
+            }) }}
+
+            <p>Makes <em>all</em> log messages get logged.</p> 
+            <p>(<code>LogLevel::Warning</code> and <code>LogLevel::Error</code> are always logged).</p>
+
+			<h4>Debug POST? (Dump POST to page, prevent re-directs)</h4>
 			{{
 				forms.lightswitch({
 					onLabel:	"On",
 					offLabel:	"Off",
-					name:		"debug",
-					on:			settings.debug,
+					name:		"debugPOST",
+					on:			settings.debugPOST,
 				})
 			}}
 
-			<p>Send Emails? (Otherwise check the plugin logs to see what would have been sent)</p>
+			<hr>
+
+			<p>Send Emails? (Otherwise check the plugin logs to see what <em>would</em> have been sent)</p>
 			{{
 				forms.lightswitch({
 					onLabel:	"On",
@@ -57,7 +71,7 @@
 					name:			"templateFolder",
 					label:			"Folder for your email templates"|t,
 					placeholder:	"_emails",
-					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your form. No slashes."|t,
+					instructions:	"CommerceMailer will look in this folder for your email templates, names of the actual template to use are supplied by your forms. No slashes."|t,
 					value:			settings.templateFolder,
 					errors:			"",
 				})

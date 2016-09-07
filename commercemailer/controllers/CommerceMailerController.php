@@ -5,16 +5,7 @@ namespace Craft;
 class CommerceMailerController extends BaseController
 {
 
-    protected $allowAnonymous = array('actionEmailProductEnquiry');
-
-    private function logError($error){
-        CommerceMailerPlugin::log($error, LogLevel::Error);
-    }
-
-    private function logInfo($message){
-        CommerceMailerPlugin::log($message, LogLevel::Info);
-    }
-
+    protected $allowAnonymous = array('actionEmailProductEnquiry', 'sendMail');
 
     /**
      * Checks that the 'honeypot' field has not been filled out (assuming one has been set).
@@ -41,7 +32,7 @@ class CommerceMailerController extends BaseController
         $ajax = craft()->request->isAjaxRequest();
 
         //Settings to control behavour when testing - we don't want to debug via ajax or it stuffs up the JSON response...
-        $debug = ($settings->debug and !$ajax);
+        $debugPOST = ($settings->debugPOST and !$ajax);
         $emailing = $settings->emailing;
 
         $savedBody = false;
@@ -52,7 +43,7 @@ class CommerceMailerController extends BaseController
         $vars = craft()->request->getPost();
   
         //Dump POST to page if debugging
-        if ($debug){
+        if ($debugPOST){
             echo '<h3>POST</h3><pre>';
             print_r($vars);
             echo '</pre>';
@@ -64,7 +55,7 @@ class CommerceMailerController extends BaseController
 
         //If it's an internal email, make sure it's in the whitelist of names
         $emailWhitelist = array_map('trim', explode(',', $settings->whitelistedNames));
-        if ($debug){
+        if ($debugPOST){
             echo '<h3>Whitelist</h3><pre>';
             print_r($emailWhitelist);
             echo '</pre>';
@@ -137,6 +128,7 @@ class CommerceMailerController extends BaseController
             }
         }
  
+
         // create an EmailModel & populate it
         $email = EmailModel::populateModel($vars);
 
@@ -158,13 +150,13 @@ class CommerceMailerController extends BaseController
 
         // Product, order and cart data 
         if (isset($vars['productId'])) {
-            $vars['product'] = craft()->commerce_product->getById($vars['productId']);
+            $vars['product'] = craft()->commerce_products->getProductById($vars['productId']);
         } 
         if (isset($vars['orderId'])) {
-            $vars['order'] = craft()->commerce_order->getById($vars['orderId']);
+            $vars['order'] = craft()->commerce_orders->getOrderById($vars['orderId']);
         } 
         $vars['cart'] = craft()->commerce_cart->getCart();
-
+       
 
         //Actual template to load is built by using the settings templateFolder + the form's POST var with name 'template'
         $templateFolder = $settings->templateFolder;
@@ -176,11 +168,11 @@ class CommerceMailerController extends BaseController
             $errors[] = 'No template in POST';
         } 
 
-        //@TODO - what to do about the plain text body - will be unrendered...
+        //@TODO - what to do about the plain text body - will be unrendered...?
         if (isset($templateFolder) and isset($vars['template']) and !$errors){
             // parse the html template
             $htmlBody = craft()->templates->render($templateFolder . "/" . $vars['template'], $vars);
-            if ($debug) {
+            if ($debugPOST) {
                 print("<h4>Subject: " . $vars['subject'] ."</h4>");
                 print($htmlBody);
             }
@@ -191,7 +183,7 @@ class CommerceMailerController extends BaseController
         if ($errors) {
             $errors[] = 'Email not sent.';
             foreach ($errors as $error) {
-                $this->logError($error);
+                CommerceMailerPlugin::logError($error);
             }
             craft()->urlManager->setRouteVariables(['errors' => $errors, 'message' => $email] );
         } 
@@ -200,44 +192,65 @@ class CommerceMailerController extends BaseController
             if($emailing){
                 $sent = false;
                 //attempt to send the email
-                if (!$spam){                    
-                    $sent = craft()->email->sendEmail($email);
+                if (!$spam){ 
+
+                    //Special sauce for us....
+                    $businessLogicImageScience = craft()->plugins->getPlugin('Business Logic for Image Science');
+                    if ($businessLogicImageScience && $businessLogicImageScience->isInstalled && $businessLogicImageScience->isEnabled){
+
+                        //Are we sending to a local address?
+                        if(strpos($email->toEmail, "@" . $settings->internalDomain) === false){
+                            //No - we'll MAY NEED to later resort to phpmail send this sucker out now that transactional email
+                            //services won't allow univerified sending domains :( ... However this is working with mailgun currently...
+                            $sent = craft()->businessLogic_messaging->sendCraftEmail($email->fromEmail, $email->toEmail, $email->subject, $email->htmlBody);
+                        }
+                        else{
+                            //Make a freshdesk ticket with the API
+                            $sent = craft()->businessLogic_freshdesk->ticket($email->fromEmail, $email->toEmail, $email->subject, $email->htmlBody, (isset($vars['order']) ? $vars['order'] : null) );         
+                        }
+
+                    }
+                    // everyone else...use Craft Email to send...@TODO -> offer phpmail option here??
+                    else{
+                        $sent = craft()->email->sendEmail($email);
+                    }
+
                 }
                 //spam - honey pot failed or email was not on the whitelist
                 else{
-                    $this->logInfo('CommerceMailer spam trapped an email to : ' . $vars['toEmail']);
+                    CommerceMailerPlugin::log('CommerceMailer spam trapped an email to : ' . $vars['toEmail']);
                     // but we pretend we've sent it...
                     $sent = true;
                 }
-                //we tried to send an email, log the result..
+                //we tried to send an email, log error if there was one...
                 if (!$sent){
-                    $errors[] = 'craft()->email->sendEmail failed.';
-                    $this->logError('craft()->email->sendEmail failed.');
+                    $errors[] = 'Sending email failed.';
+                    CommerceMailerPlugin::logError('Sending email failed.');
                     craft()->urlManager->setRouteVariables(['errors' => $errors, 'message' => $email] );                            
                 }
                 //success!
                 else{
                     craft()->userSession->setFlash('notice', 'CommerceMailer has sent an email to : ' . $vars['toEmail']);
-                    $this->logInfo('CommerceMailer has sent an email to : ' . $vars['toEmail']);
+                    CommerceMailerPlugin::log('CommerceMailer has sent an email to : ' . $vars['toEmail']);
                 }
             }
             else{
                 if(!$spam){
-                    $this->logInfo('CommerceMailer would have has sent an email to : ' . $vars['toEmail']);
+                    CommerceMailerPlugin::logError('CommerceMailer would have has sent an email to : ' . $vars['toEmail']);
                 }
                 else {
-                    $this->logInfo('CommerceMailer would have spam trapped an email to : ' . $vars['toEmail']);
+                    CommerceMailerPlugin::logError('CommerceMailer would have spam trapped an email to : ' . $vars['toEmail']);
                 }
             }
 
             //only redirect on non ajax calls and if debugging isn't enabled.
-            if (!$debug and !$ajax){
+            if (!$debugPOST and !$ajax){
                 $this->redirectToPostedUrl();
             }
 
         }
 
-        if ($debug and $errors){
+        if ($debugPOST and $errors){
             echo '<h3>ERRORS</h3><pre>';
             print_r($errors);
             echo '</pre>';
