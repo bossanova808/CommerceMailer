@@ -195,8 +195,7 @@ class CommerceMailerController extends BaseController
                 if (!$spam){ 
 
                     //Special sauce for us....
-                    $businessLogicImageScience = craft()->plugins->getPlugin('Business Logic for Image Science');
-                    if ($businessLogicImageScience && $businessLogicImageScience->isInstalled && $businessLogicImageScience->isEnabled){
+                    if (craft()->config->get('environmentVariables')['customMessaging']){
 
                         //Are we sending to a local address?
                         if(strpos($email->toEmail, "@" . $settings->internalDomain) === false){

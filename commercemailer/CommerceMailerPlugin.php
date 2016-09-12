@@ -3,7 +3,7 @@ namespace Craft;
 
 class CommerceMailerPlugin extends BasePlugin
 {
-    private $version = "0.1.1";
+    private $version = "0.1.2";
     private $schemaVersion = "0.0.0";
 
     private $name = 'Commerce Mailer';
