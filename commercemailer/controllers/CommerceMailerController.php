@@ -119,12 +119,22 @@ class CommerceMailerController extends BaseController
                         }
                         $compiledMessage .= $postedMessage['body'];
                     }
-                    $vars['body'] = $compiledMessage;
+                    if (isset($vars['noNl2br'])) {
+                        $vars['body'] =  $compiledMessage;
+                    }
+                    else {
+                        $vars['body'] = "<br>" . nl2br($compiledMessage);
+                    }
                 }
             }
             else
             {
-                $vars['body'] = $postedMessage;
+                if (isset($vars['noNl2br'])) {
+                    $vars['body'] = $postedMessage;
+                }
+                else {
+                    $vars['body'] = "<br>" . nl2br($postedMessage);
+                }
             }
         }
  
@@ -132,6 +142,14 @@ class CommerceMailerController extends BaseController
         // create an EmailModel & populate it
         $email = EmailModel::populateModel($vars);
 
+        //Attach a file if there is one...
+        $attachment = null;
+        if (isset($_FILES['attachment']) && !empty($_FILES['attachment']['name']))
+        {
+            CommerceMailerPlugin::log("Found attachment " . $_FILES['attachment']['name']);
+            $attachment = \CUploadedFile::getInstanceByName('attachment');
+            $email->addAttachment($attachment->getTempName(), $attachment->getName(), 'base64', $attachment->getType());
+        }
 
         //validate the email model 
         //put all our errors in one place, and return the email model if invalid - use message as this is what contactForm does
@@ -185,6 +203,8 @@ class CommerceMailerController extends BaseController
             foreach ($errors as $error) {
                 CommerceMailerPlugin::logError($error);
             }
+            //Log what page the error happened on...
+            CommerceMailerPlugin::logError(craft()->request->getUrlReferrer());
             craft()->urlManager->setRouteVariables(['errors' => $errors, 'message' => $email] );
         } 
         else {
@@ -195,7 +215,7 @@ class CommerceMailerController extends BaseController
                 if (!$spam){ 
 
                     //Special sauce for us....
-                    if (craft()->config->get('environmentVariables')['customMessaging']){
+                    if (isset(craft()->config->get('environmentVariables')['IsImageScience'])){
 
                         //Are we sending to a local address?
                         if(strpos($email->toEmail, "@" . $settings->internalDomain) === false){
@@ -205,7 +225,7 @@ class CommerceMailerController extends BaseController
                         }
                         else{
                             //Make a freshdesk ticket with the API
-                            $sent = craft()->businessLogic_freshdesk->ticket($email->fromEmail, $email->toEmail, $email->subject, $email->htmlBody, (isset($vars['order']) ? $vars['order'] : null) );         
+                            $sent = craft()->businessLogic_freshdesk->ticket($email->fromEmail, $email->toEmail, $email->subject, $email->htmlBody, (isset($vars['order']) ? $vars['order'] : null), false, $attachment);         
                         }
 
                     }
