@@ -205,7 +205,7 @@ class CommerceMailerController extends BaseController
                 if (!$spam){ 
 
                     //Special sauce for us....
-                    if (craft()->config->get('environmentVariables')['IsImageScience']){
+                    if (isset(craft()->config->get('environmentVariables')['IsImageScience'])){
 
                         //Are we sending to a local address?
                         if(strpos($email->toEmail, "@" . $settings->internalDomain) === false){
